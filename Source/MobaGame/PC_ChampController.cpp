@@ -93,7 +93,7 @@ void APC_ChampController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(SetTargetClickAction, ETriggerEvent::Canceled, this, &APC_ChampController::OnSetUnitTargetReleased);
 
 		//Setup the inputs for the keys
-		EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Started, this, &APC_ChampController::Ability_1);
+		EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Started, this, &APC_ChampController::clientAbility1);
 		//EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Completed, this, &APC_ChampController::clientAbility1);
 		//EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Triggered, this, &APC_ChampController::clientAbility1);
 	}
@@ -241,21 +241,28 @@ void APC_ChampController::clientAbility1()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 1 from client"));
 	Ability_1();
+	Ability_1_Animation();
 }
 
 void APC_ChampController::Ability_1_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 1"));
-	if (aiCont)
-	{
-		aiCont->Ability_1();
-		aiCont->Ability_1_Animation();
-	}
+	
+	controlledChampion->ability_1();
+		
+	
 	
 	
 }
 
 bool APC_ChampController::Ability_1_Validate() { return true; }
+
+
+void APC_ChampController::Ability_1_Animation_Implementation()
+{
+	controlledChampion->ability_1_Animation();
+}
+bool APC_ChampController::Ability_1_Animation_Validate() { return true; }
 
 
 void APC_ChampController::incrementPlayerCount_Implementation()

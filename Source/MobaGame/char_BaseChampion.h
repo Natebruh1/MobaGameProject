@@ -52,9 +52,9 @@ public:
 	ChampionScripts<T...>* get_scripts();
 
 	
-	virtual void ability_1();
-	virtual void ability_1_Animation();
-	//virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
+	UFUNCTION() virtual void ability_1();
+	UFUNCTION() virtual void ability_1_Animation();
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 private:
 	//Actually create the topdown Camera using a camera component
 	UPROPERTY(VisibleAnywhere) class UCameraComponent* TopDownCameraComponent;

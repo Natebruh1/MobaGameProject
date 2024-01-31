@@ -32,7 +32,7 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation) void ServerSetTargetUnit(Achar_Unit* targetUnitVal);
 	UFUNCTION(Server, Reliable, WithValidation) void swapTeams();
 	void Ability_1();
-	void Ability_1_Animation();
+	UFUNCTION(NetMulticast,Reliable,WithValidation) void Ability_1_Animation();
 	virtual void BeginPlay();
 	virtual void Tick(float DeltaTime) override;
 	void updateInternalState(EInternalActionState newState);

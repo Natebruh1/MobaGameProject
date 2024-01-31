@@ -60,11 +60,11 @@ void AAC_PlayerAIController::Ability_1()
 
 
 
-void AAC_PlayerAIController::Ability_1_Animation()
+void AAC_PlayerAIController::Ability_1_Animation_Implementation()
 {
 	GetPawn<Achar_BaseChampion>()->ability_1_Animation();
 }
-
+bool AAC_PlayerAIController::Ability_1_Animation_Validate() { return true;  }
 
 void AAC_PlayerAIController::BeginPlay()
 {

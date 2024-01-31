@@ -3,6 +3,25 @@
 
 Achamp_WaoPierre::Achamp_WaoPierre()
 {
+	bReplicates = true;
+	//Fire = CreateDefaultSubobject<UNiagaraComponent>("Fire Particles");
+	//Fire->Deactivate();
+	FireBall = CreateDefaultSubobject<USphereComponent>(TEXT("Fireball Sphere"));
+	FireBall->SetupAttachment(GetRootComponent());
+	FireBall->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Overlap);
+	FireBall->SetSphereRadius(4.f * baseSize);
+
+	Fire = CreateDefaultSubobject<UNiagaraComponent>(TEXT("UNiagara Component Fire"));
+	Fire->SetupAttachment(RootComponent);
+	Fire->SetIsReplicated(true);
+	
+
+
+	FireSitIn = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Temp Mesh For Fire"));
+	FireSitIn->SetupAttachment(RootComponent);
+	FireSitIn->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	FireSitIn->SetHiddenInGame(true);
+	
 }
 
 void Achamp_WaoPierre::Tick(float DeltaTime)
@@ -17,14 +36,15 @@ void Achamp_WaoPierre::Tick(float DeltaTime)
 	staggeredDamage -= min(staggerTick, staggeredDamage);
 
 
-	if (FireBall)
+	if (Ability1Active)
 	{
 		
 		//UE_LOG(LogTemp, Warning, TEXT("Wao Pierre Shooting Fireball"));
 		TArray<AActor*> result;
-		FireBall->SetWorldLocation(this->GetActorLocation()+(this->GetActorForwardVector()*150.f));
-		Fire->SetWorldLocation(FireBall->GetComponentLocation()); //Move Fire particles to the area
-		Fire->SetWorldScale3D(FVector(4.f, 4.f, 4.f));
+		FireBall->SetWorldLocation(this->GetActorLocation()+(this->GetActorForwardVector()*180.f));
+		FireSitIn->SetWorldLocation(this->GetActorLocation() + (this->GetActorForwardVector() * 120.f));
+		FireSitIn->SetVisibility(true);
+		
 		FireBall->GetOverlappingActors(result, Achar_Unit::StaticClass());
 		UE_LOG(LogTemp, Warning, TEXT("Fireball Overlap : %d"), result.Num());
 		for (int i = 0; i < result.Num(); i++)
@@ -39,6 +59,18 @@ void Achamp_WaoPierre::Tick(float DeltaTime)
 
 }
 
+void Achamp_WaoPierre::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	//Fire->SetVisibility(false);
+	Fire = UNiagaraFunctionLibrary::SpawnSystemAttached(FireComponent,
+		GetRootComponent(), "", GetActorLocation(), GetActorRotation(), EAttachLocation::KeepRelativeOffset, true, true,
+		ENCPoolMethod::AutoRelease, true);
+	//Fire = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FireComponent, FireBall->GetComponentLocation());
+	FireSitIn->SetWorldScale3D(FVector(0.f, 0.f, 0.f));
+}
+
 void Achamp_WaoPierre::receiveDamage(float val)
 {
 	float staggerPercent = 0.8;
@@ -50,17 +82,14 @@ void Achamp_WaoPierre::receiveDamage(float val)
 void Achamp_WaoPierre::ability_1()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Wao Pierre Ability 1"));
-	FireBall = NewObject<USphereComponent>(this, USphereComponent::StaticClass(), TEXT("Fireball Sphere"));
-	FireBall->SetupAttachment(GetRootComponent());
-	FireBall->RegisterComponent();
 	
-	this->AddInstanceComponent(FireBall);
+	//FireSitIn->SetWorldScale3D(FVector(1.f, 1.f, 2.f));
+	
 
 	//FireBall->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	FireBall->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Overlap);
-	FireBall->SetSphereRadius(2.f*baseSize);
 	
 	
+	Ability1Active = true;
 	
 	
 	
@@ -71,11 +100,17 @@ void Achamp_WaoPierre::ability_1()
 
 void Achamp_WaoPierre::ability_1_Animation()
 {
-	Fire = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FireComponent, FireBall->GetComponentLocation());
 	
+	Fire = UNiagaraFunctionLibrary::SpawnSystemAttached(FireComponent,
+		GetRootComponent(), "", GetActorLocation() + (this->GetActorForwardVector() * 150.f), GetActorRotation(), EAttachLocation::KeepRelativeOffset, true, true,
+		ENCPoolMethod::AutoRelease, true);
+	Fire->SetWorldLocation(FireBall->GetComponentLocation()); //Move Fire particles to the area
+	Fire->SetWorldScale3D(FVector(4.f, 4.f, 4.f));
+	FireSitIn->SetWorldScale3D(FVector(2.f, 1.f, 1.f));
 	//Fire->bAutoActivate = true;
 	//Fire->RegisterComponent();
-	if (Fire) Fire->Activate();
+	//Fire->SetIsReplicated(true);
+	//if (Fire) Fire->Activate();
 }
 
 

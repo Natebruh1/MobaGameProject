@@ -58,6 +58,7 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation) void ServerMoveChampion(FVector moveLocation);
 	UFUNCTION(Server, Reliable, WithValidation) void ServerUpdateTargetUnit(Achar_Unit* newTarget);
 	UFUNCTION(Server, Reliable, WithValidation) void Ability_1();
+	UFUNCTION(NetMulticast, Reliable, WithValidation) void Ability_1_Animation();
 	virtual void Tick(float DeltaTime) override;
 protected:
 	//Move to the mouse cursor
@@ -74,7 +75,7 @@ protected:
 	void OnSetUnitTargetTriggered();//Targeting
 	void OnSetUnitTargetReleased();
 
-	void clientAbility1(); //Abilities
+	UFUNCTION() void clientAbility1(); //Abilities
 
 	UFUNCTION(Server, Reliable, WithValidation) void incrementPlayerCount();
 	UFUNCTION(Server, Reliable, WithValidation)void setChampionTeam(TeamName val);
