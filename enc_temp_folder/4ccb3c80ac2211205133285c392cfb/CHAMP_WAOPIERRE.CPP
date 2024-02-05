@@ -47,7 +47,7 @@ void Achamp_WaoPierre::Tick(float DeltaTime)
 		
 		//UE_LOG(LogTemp, Warning, TEXT("Wao Pierre Shooting Fireball"));
 		TArray<AActor*> result;
-		FireBall->SetWorldLocation(this->GetActorLocation()+(this->GetActorForwardVector()*120.f));
+		FireBall->SetWorldLocation(this->GetActorLocation()+(this->GetActorForwardVector()*180.f));
 		FireSitIn->SetWorldLocation(this->GetActorLocation() + (this->GetActorForwardVector() * 120.f));
 		FireSitIn->SetVisibility(true);
 		

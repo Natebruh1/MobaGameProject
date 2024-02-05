@@ -207,30 +207,27 @@ void Achar_Unit::windupAttack()
 void Achar_Unit::attackUnit()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Attacking a Unit"));
-	FVector targetVector = GetActorLocation() - (getTargetUnit()->GetActorLocation());
-	if (targetVector.Length() < getUnitRange()) //If still in range
+	
+	//Spawn Champion In Level
+	FVector SpawnLocation = FVector(GetActorLocation());//WIP set to team spawn points
+	FRotator SpawnRotation = FRotator(0.f, 0.f, 0.f);
+	Apn_attackProjectile* projRef = GetWorld()->SpawnActor<Apn_attackProjectile>(GeneratedProjectileBP->GeneratedClass, SpawnLocation, SpawnRotation);
+	if (projRef)
 	{
-		//Spawn Champion In Level
-		FVector SpawnLocation = FVector(GetActorLocation());//WIP set to team spawn points
-		FRotator SpawnRotation = FRotator(0.f, 0.f, 0.f);
-		Apn_attackProjectile* projRef = GetWorld()->SpawnActor<Apn_attackProjectile>(GeneratedProjectileBP->GeneratedClass, SpawnLocation, SpawnRotation);
-		if (projRef)
+		if (getTargetUnit())
 		{
-			if (getTargetUnit())
-			{
-				UE_LOG(LogTemp, Warning, TEXT("We have an available targeted unit"));
-			}
-
-			projRef->setTargetUnit(getTargetUnit());
-			projRef->storedDamage = baseAttack + bonusAttack;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Spawned projectile is nullptr"));
+			UE_LOG(LogTemp, Warning, TEXT("We have an available targeted unit"));
 		}
 
-		attackProjectileArray.Add(projRef); //Spawn the attack projectile
+		projRef->setTargetUnit(getTargetUnit());
+		projRef->storedDamage = baseAttack + bonusAttack;
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Spawned projectile is nullptr"));
+	}
+	
+	attackProjectileArray.Add(projRef); //Spawn the attack projectile
 }
 
 FTimerHandle* Achar_Unit::getAttackTimerHandle()

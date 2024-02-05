@@ -33,6 +33,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	Achar_Unit* getTargetUnit();
 	UFUNCTION(Server, Reliable, WithValidation) void setTargetUnit(Achar_Unit* newTarget);
+	float storedDamage=300.f;
 
 private:
 	UPROPERTY(VisibleAnywhere) class UStaticMeshComponent* ProjectileMeshComponent;

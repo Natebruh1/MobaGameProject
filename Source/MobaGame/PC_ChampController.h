@@ -43,6 +43,7 @@ public:
 
 	//KEYS
 	UPROPERTY(EditAnywhere) class UInputAction* UseAbility1;
+	UPROPERTY(EditAnywhere) class UInputAction* UseAbility2;
 
 	//Spawn champion
 	
@@ -59,6 +60,8 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation) void ServerUpdateTargetUnit(Achar_Unit* newTarget);
 	UFUNCTION(Server, Reliable, WithValidation) void Ability_1();
 	UFUNCTION(NetMulticast, Reliable, WithValidation) void Ability_1_Animation();
+	UFUNCTION(Server, Reliable, WithValidation) void Ability_2();
+	UFUNCTION(NetMulticast, Reliable, WithValidation) void Ability_2_Animation();
 	virtual void Tick(float DeltaTime) override;
 protected:
 	//Move to the mouse cursor
@@ -76,6 +79,7 @@ protected:
 	void OnSetUnitTargetReleased();
 
 	UFUNCTION() void clientAbility1(); //Abilities
+	UFUNCTION() void clientAbility2();
 
 	UFUNCTION(Server, Reliable, WithValidation) void incrementPlayerCount();
 	UFUNCTION(Server, Reliable, WithValidation)void setChampionTeam(TeamName val);

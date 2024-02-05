@@ -59,6 +59,16 @@ void Achar_BaseChampion::ability_1_Animation()
 	UE_LOG(LogTemp, Warning, TEXT("Base Champion Ability_1_Animation"));
 }
 
+void Achar_BaseChampion::ability_2()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Base Champion Ability_2"));
+}
+
+void Achar_BaseChampion::ability_2_Animation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Base Champion Ability_2_Animation"));
+}
+
 void Achar_BaseChampion::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

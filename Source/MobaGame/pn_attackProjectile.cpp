@@ -40,7 +40,7 @@ void Apn_attackProjectile::Tick(float DeltaTime)
 		if (distToTarget < 130.f)//If within distance
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Destroying Projectile")); //Otherwise display a warning that we can't find the target
-			getTargetUnit()->receiveDamage(300.f); //Need to update with the caller units attack damage
+			getTargetUnit()->receiveDamage(storedDamage); //Need to update with the caller units attack damage
 			this->Destroy();
 		}
 	}

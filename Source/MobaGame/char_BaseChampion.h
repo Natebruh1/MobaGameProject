@@ -54,7 +54,15 @@ public:
 	
 	UFUNCTION() virtual void ability_1();
 	UFUNCTION() virtual void ability_1_Animation();
+	UFUNCTION() virtual void ability_2();
+	UFUNCTION() virtual void ability_2_Animation();
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
+
+	float Ability1CD = 10.f;
+	FTimerHandle Ability1Handle;
+	float Ability2CD = 10.f;
+	FTimerHandle Ability2Handle;
+
 private:
 	//Actually create the topdown Camera using a camera component
 	UPROPERTY(VisibleAnywhere) class UCameraComponent* TopDownCameraComponent;

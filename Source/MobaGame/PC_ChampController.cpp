@@ -94,6 +94,7 @@ void APC_ChampController::SetupInputComponent()
 
 		//Setup the inputs for the keys
 		EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Started, this, &APC_ChampController::clientAbility1);
+		EnhancedInputComponent->BindAction(UseAbility2, ETriggerEvent::Started, this, &APC_ChampController::clientAbility2);
 		//EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Completed, this, &APC_ChampController::clientAbility1);
 		//EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Triggered, this, &APC_ChampController::clientAbility1);
 	}
@@ -244,6 +245,16 @@ void APC_ChampController::clientAbility1()
 	Ability_1_Animation();
 }
 
+void APC_ChampController::clientAbility2()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 2 from client"));
+	Ability_2();
+	Ability_2_Animation();
+}
+
+/// ---------///
+/// ABILITIES///
+/// ---------///
 void APC_ChampController::Ability_1_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 1"));
@@ -264,6 +275,20 @@ void APC_ChampController::Ability_1_Animation_Implementation()
 }
 bool APC_ChampController::Ability_1_Animation_Validate() { return true; }
 
+
+void APC_ChampController::Ability_2_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 2"));
+
+	controlledChampion->ability_2();
+}
+bool APC_ChampController::Ability_2_Validate() { return true; }
+
+void APC_ChampController::Ability_2_Animation_Implementation()
+{
+	controlledChampion->ability_2_Animation();
+}
+bool APC_ChampController::Ability_2_Animation_Validate() { return true; }
 
 void APC_ChampController::incrementPlayerCount_Implementation()
 {
