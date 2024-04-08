@@ -6,10 +6,13 @@
 void Achar_BaseChampion::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	mana += manaRegen*DeltaTime;
+	mana = min(mana, maxMana);
 }
 
 Achar_BaseChampion::Achar_BaseChampion()
 {
+	chosenChampion = FString("Champion");
 	//Set the size of the player capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.0f * getUnitSize(), 96.0f * getUnitSize());
 
@@ -69,10 +72,19 @@ void Achar_BaseChampion::ability_2_Animation()
 	UE_LOG(LogTemp, Warning, TEXT("Base Champion Ability_2_Animation"));
 }
 
-void Achar_BaseChampion::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void Achar_BaseChampion::ability_3()
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	UE_LOG(LogTemp, Warning, TEXT("Base Champion Ability_3"));
 }
+
+void Achar_BaseChampion::ability_3_Animation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Base Champion Ability_3_Animation"));
+}
+
+
+
+
 
 
 
@@ -86,11 +98,16 @@ ChampionScripts<T...>* Achar_BaseChampion::get_scripts()
 }
 
 
-//void Achar_BaseChampion::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const
-//{
-//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-//	
-//
-//
-//	//DOREPLIFETIME_CONDITION(APC_ChampController, cameraAttached, COND_OwnerOnly);
-//}
+void Achar_BaseChampion::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	
+	//DOREPLIFETIME(Achar_BaseChampion, mouseVec);
+	DOREPLIFETIME(Achar_BaseChampion, mana);
+	DOREPLIFETIME(Achar_BaseChampion, Ability1Handle);
+	DOREPLIFETIME(Achar_BaseChampion, Ability2Handle);
+	DOREPLIFETIME(Achar_BaseChampion, Ability3Handle);
+	DOREPLIFETIME(Achar_BaseChampion, secondaryPercentage);
+	//DOREPLIFETIME_CONDITION(APC_ChampController, cameraAttached, COND_OwnerOnly);
+}

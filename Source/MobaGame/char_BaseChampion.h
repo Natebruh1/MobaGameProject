@@ -4,6 +4,7 @@
 
 #include <map>
 #include <string>
+#include "Kismet/GameplayStatics.h"
 #include "ChampionIncludes.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -51,18 +52,35 @@ public:
 	template <typename... T>
 	ChampionScripts<T...>* get_scripts();
 
+	UPROPERTY(EditAnywhere)FVector mouseVec;
 	
 	UFUNCTION() virtual void ability_1();
 	UFUNCTION() virtual void ability_1_Animation();
 	UFUNCTION() virtual void ability_2();
 	UFUNCTION() virtual void ability_2_Animation();
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
+	UFUNCTION() virtual void ability_3();
+	UFUNCTION() virtual void ability_3_Animation();
+
+	
+	//virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 
 	float Ability1CD = 10.f;
-	FTimerHandle Ability1Handle;
+	UPROPERTY(EditAnywhere, Replicated)FTimerHandle Ability1Handle;
+	FText Ability1Desc = FText::FromString("Q Desc");
 	float Ability2CD = 10.f;
-	FTimerHandle Ability2Handle;
+	UPROPERTY(EditAnywhere, Replicated)FTimerHandle Ability2Handle;
+	FText Ability2Desc = FText::FromString("W Desc");
+	float Ability3CD = 10.f;
+	UPROPERTY(EditAnywhere, Replicated)FTimerHandle Ability3Handle;
+	FText Ability3Desc = FText::FromString("E Desc");
 
+
+	UPROPERTY(EditAnywhere, Replicated)float secondaryPercentage = 0.f;
+	FText secondaryName = FText::FromString("Mana");
+
+	UPROPERTY(EditAnywhere,Replicated)float mana = 0.f;
+	float maxMana = 1000.f;
+	float manaRegen = 10.f;
 private:
 	//Actually create the topdown Camera using a camera component
 	UPROPERTY(VisibleAnywhere) class UCameraComponent* TopDownCameraComponent;
@@ -71,6 +89,6 @@ private:
 	UPROPERTY(VisibleAnywhere) class USpringArmComponent* CameraBoom;
 
 	void* scripts; //Encompasser that is only accessible via casting
-	std::string chosenChampion = "Wao";
+	
 };
 

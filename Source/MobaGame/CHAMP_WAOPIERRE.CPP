@@ -1,12 +1,13 @@
-#include "D:\Users\NBurchell\Documents\Unreal Projects\MobaGame\Intermediate\Build\Win64\x64\MobaGameEditor\Development\Engine\SharedPCH.Engine.ShadowErrors.InclOrderUnreal5_1.h"
+//#include "D:\Users\NBurchell\Documents\Unreal Projects\MobaGame\Intermediate\Build\Win64\x64\MobaGameEditor\Development\Engine\SharedPCH.Engine.ShadowErrors.InclOrderUnreal5_1.h"
 #include "champ_WaoPierre.h"
 
 Achamp_WaoPierre::Achamp_WaoPierre()
 {
+	chosenChampion = FString("Wao Pierre");
 	//Set base stats
 	Ability1CD = 8.f;
-	Ability2CD = 12.f;
-	setUnitAttackRange(128.f);
+	Ability3CD = 12.f;
+	setUnitAttackRange(1024.f);
 	baseAttack = 300.f;
 
 	bReplicates = true;
@@ -27,7 +28,10 @@ Achamp_WaoPierre::Achamp_WaoPierre()
 	FireSitIn->SetupAttachment(RootComponent);
 	FireSitIn->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	//FireSitIn->SetHiddenInGame(true);
-	
+	secondaryName = FText::FromString("Stagger");
+	Ability1Desc = FText::FromString("Breath fire in front of Wao Pierre");
+	Ability2Desc = FText::FromString("Gain bonus attack temporarily. Gain 200 Staggered damage.");
+	Ability3Desc = FText::FromString("Cut your staggered damage in half.");
 }
 
 void Achamp_WaoPierre::Tick(float DeltaTime)
@@ -47,8 +51,17 @@ void Achamp_WaoPierre::Tick(float DeltaTime)
 		
 		//UE_LOG(LogTemp, Warning, TEXT("Wao Pierre Shooting Fireball"));
 		TArray<AActor*> result;
-		FireBall->SetWorldLocation(this->GetActorLocation()+(this->GetActorForwardVector()*120.f));
-		FireSitIn->SetWorldLocation(this->GetActorLocation() + (this->GetActorForwardVector() * 120.f));
+		UE_LOG(LogTemp, Warning, TEXT("MVec : %s"), *mouseVec.ToString());
+		FVector ForwardVec = mouseVec;
+		ForwardVec.Normalize();
+		FireBall->SetWorldLocation(this->GetActorLocation()+(ForwardVec*120.f));
+		FireSitIn->SetWorldLocation(this->GetActorLocation() + (ForwardVec * 120.f));
+		
+		FRotator a = mouseVec.Rotation();
+		a.Pitch = 0.f;
+		FireBall->SetWorldRotation(a);
+		FireSitIn->SetWorldRotation(a);
+		this->SetActorRotation(a);
 		FireSitIn->SetVisibility(true);
 		
 		FireBall->GetOverlappingActors(result, Achar_Unit::StaticClass());
@@ -58,10 +71,14 @@ void Achamp_WaoPierre::Tick(float DeltaTime)
 			if (result[i] != this && Cast<Achar_Unit>(result[i])->getUnitTeam()!=this->getUnitTeam())
 			{
 				Achar_Unit* hitTarg = Cast<Achar_Unit>(result[i]);
-				hitTarg->receiveDamage(150.f * GetWorld()->DeltaTimeSeconds);
+				//Damage is 240 + 80% bAD over 1.2 seconds
+				hitTarg->receiveDamage((240.f+(bonusAttack*0.8)) * GetWorld()->DeltaTimeSeconds);
+				
 			}
 		}
 	}
+
+	secondaryPercentage = (staggeredDamage) / baseHealth;
 
 }
 
@@ -72,6 +89,16 @@ void Achamp_WaoPierre::end_fire()
 	//Scale the mesh down
 	FireSitIn->SetWorldScale3D(FVector(0.f, 0.f, 0.f));
 }
+
+void Achamp_WaoPierre::end_bonusAttack()
+{
+	bonusAttack -= 50;
+}
+
+//void Achamp_WaoPierre::AttackSteroidOnHit(Achar_Unit* waoPierre, Achar_Unit** target)
+//{
+//	(*target)->receiveDamage(500.f);
+//}
 
 void Achamp_WaoPierre::BeginPlay()
 {
@@ -87,6 +114,7 @@ void Achamp_WaoPierre::BeginPlay()
 
 void Achamp_WaoPierre::receiveDamage(float val)
 {
+	//Overridden for passive effect
 	float staggerPercent = 0.8;
 	currentHealth -= val * staggerPercent;
 	staggeredDamage += val * (1 - staggerPercent);
@@ -123,17 +151,27 @@ void Achamp_WaoPierre::ability_2()
 {
 	if (!GetWorldTimerManager().IsTimerActive(Ability2Handle))
 	{
-		staggeredDamage = staggeredDamage / 2;
+		FOnHitDelegate extraDmg;
+		//Gain Bonus Attack Damage
+		bonusAttack += 50.0;
+		//Make the player take Damage in return
+		staggeredDamage += 200.0;
+		GetWorldTimerManager().SetTimer(AttackIncreaseHandle, this, &Achamp_WaoPierre::end_bonusAttack, 4.f, false); //Remove the bonus Attack in 4 seconds
 		GetWorldTimerManager().SetTimer(Ability2Handle, Ability2CD, false);
+		Achar_Unit* a = this;
+		//extraDmg.BindUObject(this, &Achamp_WaoPierre::AttackSteroidOnHit, a, targetedUnitPtr);
+	}
+}
+
+void Achamp_WaoPierre::ability_3()
+{
+	if (!GetWorldTimerManager().IsTimerActive(Ability3Handle))
+	{
+		staggeredDamage = staggeredDamage / 2; //Reduce Staggered Damage
+		GetWorldTimerManager().SetTimer(Ability3Handle, Ability3CD, false);
 	}
 }
 
 
-//void Achamp_WaoPierre::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const
-//{
-//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-//	DOREPLIFETIME(Achamp_WaoPierre, Fire);
-//	
-//
-//	//DOREPLIFETIME_CONDITION(APC_ChampController, cameraAttached, COND_OwnerOnly);
-//}
+
+

@@ -19,6 +19,8 @@
 #include "GameFramework/Character.h"
 #include "char_Unit.generated.h"
 
+DECLARE_DELEGATE_TwoParams(FOnHitDelegate,Achar_Unit*,Achar_Unit**)
+
 
 
 UENUM() enum TeamName
@@ -49,7 +51,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FString chosenChampion = "Unit";
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -105,13 +107,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health Variables") UWidgetComponent* healthBarWidgetComponent;
 
 	float baseSize = 1.f;
+	TArray<FOnHitDelegate> OnHit;
+	//UFUNCTION() void AddOnHit(FOnHitDelegate OnHitName);
+	Achar_Unit** targetedUnitPtr;
 
+	
 private:
 	//Unit stats
 	UPROPERTY(EditAnywhere) bool unitTargetable;
 	UPROPERTY(EditAnywhere) bool unitVisible;
 	UPROPERTY(EditAnywhere) float unitSize;
 	UPROPERTY(EditAnywhere, Replicated) Achar_Unit* targetedUnit;
+	
 
 	UPROPERTY(EditAnywhere) FString unitName;
 	UPROPERTY(EditAnywhere, Replicated) TEnumAsByte<TeamName> unitTeam; //Team that the unit is a part of

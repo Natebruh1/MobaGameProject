@@ -77,6 +77,10 @@ void AAC_PlayerAIController::BeginPlay()
 void AAC_PlayerAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (GetPawn<Achar_BaseChampion>())
+	{
+		GetPawn<Achar_BaseChampion>()->mouseVec = cachedMouseVec;
+	}
 	switch (currentState) {
 	case MoveState:
 		//UE_LOG(LogTemp, Warning, TEXT("MOVING CONTROLLED PLAYER"));
@@ -98,6 +102,7 @@ void AAC_PlayerAIController::Tick(float DeltaTime)
 		}
 		break;
 	case Attack:
+		
 		float remainingAttackWindup = GetWorldTimerManager().GetTimerRemaining(*GetPawn<Achar_Unit>()->getAttackTimerHandle());
 		if (!(remainingAttackWindup > 0.f))//If we have no remaining attack timer
 		{
@@ -128,6 +133,11 @@ void AAC_PlayerAIController::setCachedMoveLocation(FVector val)
 {
 	UE_LOG(LogTemp, Warning, TEXT("--UPDATING CACHED LOCATION--"));
 	cachedMoveLocation = val;
+}
+
+EInternalActionState AAC_PlayerAIController::getCurrentState()
+{
+	return currentState;
 }
 
 void AAC_PlayerAIController::MoveControlledPlayer_Implementation(FVector movePosition)

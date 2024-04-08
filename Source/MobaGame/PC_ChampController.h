@@ -1,8 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
-
+#include "champ_Lucien.h"
 #include "champ_WaoPierre.h"
+#include "./Public/W_SidePanelInfo.h"
+#include "./Public/W_GameDiagnostics.h"
+#include "./Public/playerCharState.h"
 #include "char_BaseChampion.h"
 #include "AC_PlayerAIController.h"
 #include "Templates/SubclassOf.h"
@@ -44,6 +47,7 @@ public:
 	//KEYS
 	UPROPERTY(EditAnywhere) class UInputAction* UseAbility1;
 	UPROPERTY(EditAnywhere) class UInputAction* UseAbility2;
+	UPROPERTY(EditAnywhere) class UInputAction* UseAbility3;
 
 	//Spawn champion
 	
@@ -52,7 +56,15 @@ public:
 	UPROPERTY(EditAnywhere, Category="Champion Class") TSubclassOf<Achar_BaseChampion> championClass;
 	UPROPERTY(EditAnywhere, Replicated) Achar_BaseChampion* controlledChampion;
 
+	UPROPERTY(EditAnywhere) TSubclassOf<UW_SidePanelInfo> overlayClass;
+	UPROPERTY(EditAnywhere) UW_SidePanelInfo* displayPtr;
 
+	UPROPERTY(EditAnywhere) TSubclassOf<UW_GameDiagnostics> diagClass;
+	UPROPERTY(EditAnywhere) UW_GameDiagnostics* diagPtr;
+
+	UPROPERTY(EditAnywhere,Replicated) float cd1;
+	UPROPERTY(EditAnywhere,Replicated) float cd2;
+	UPROPERTY(EditAnywhere,Replicated) float cd3;
 	
 	UFUNCTION() void SpawnChampion();
 	UFUNCTION(Client, Reliable, WithValidation) void ClientBindCameraToChampion();
@@ -62,7 +74,15 @@ public:
 	UFUNCTION(NetMulticast, Reliable, WithValidation) void Ability_1_Animation();
 	UFUNCTION(Server, Reliable, WithValidation) void Ability_2();
 	UFUNCTION(NetMulticast, Reliable, WithValidation) void Ability_2_Animation();
+	UFUNCTION(Server, Reliable, WithValidation) void Ability_3();
+	UFUNCTION(NetMulticast, Reliable, WithValidation) void Ability_3_Animation();
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION() FVector getMouseVec();
+	UFUNCTION(Server, Reliable, WithValidation) void ServerUpdateMouseVec(FVector inp);
+
+	UPROPERTY(EditAnywhere,Replicated) int playerID;
+	UPROPERTY(EditAnywhere, Replicated) TEnumAsByte<EInternalActionState> stateFromServer;
 protected:
 	//Move to the mouse cursor
 	uint32 bMoveToMouseCursor : 1;
@@ -80,6 +100,7 @@ protected:
 
 	UFUNCTION() void clientAbility1(); //Abilities
 	UFUNCTION() void clientAbility2();
+	UFUNCTION() void clientAbility3();
 
 	UFUNCTION(Server, Reliable, WithValidation) void incrementPlayerCount();
 	UFUNCTION(Server, Reliable, WithValidation)void setChampionTeam(TeamName val);
@@ -91,4 +112,5 @@ private:
 	FVector SpawnLocation;
 	FRotator SpawnRotation;
 	AAC_PlayerAIController* aiCont;
+	
 };

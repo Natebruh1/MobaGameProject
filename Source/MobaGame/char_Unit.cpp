@@ -133,6 +133,7 @@ void Achar_Unit::setUnitSize(float val)
 void Achar_Unit::setTargetUnit(Achar_Unit* val)
 {
 	targetedUnit = val;
+	//*targetedUnitPtr = val;
 }
 
 void Achar_Unit::setUnitName(FString val)
@@ -148,6 +149,7 @@ void Achar_Unit::setUnitAttackRange(float val)
 void Achar_Unit::setUnitRangeType(EUnitRangeType val)
 {
 	unitRangeType = val;
+	
 }
 
 void Achar_Unit::setUnitTeam_Implementation(TeamName val)
@@ -196,12 +198,18 @@ float Achar_Unit::getUnitRange()
 
 void Achar_Unit::windupAttack()
 {
-	//Check if target is in range
-	FVector targetVector = GetActorLocation() - (getTargetUnit()->GetActorLocation());
-	if (targetVector.Length() < getUnitRange()) //If the vector between us and our target is less than our range then
+	if (getUnitTeam() != getTargetUnit()->getUnitTeam()) //Check on same team
 	{
-		GetWorld()->GetTimerManager().SetTimer(attackTimerHandle, this, &Achar_Unit::attackUnit, 1.f / attackSpeed, false); //Set a timer equal to our attacks per second to run attackUnit();
+
+		//Check if target is in range
+		FVector targetVector = GetActorLocation() - (getTargetUnit()->GetActorLocation());
+		if (targetVector.Length() < getUnitRange()) //If the vector between us and our target is less than our range then
+		{
+			GetWorld()->GetTimerManager().SetTimer(attackTimerHandle, this, &Achar_Unit::attackUnit, 1.f / attackSpeed, false); //Set a timer equal to our attacks per second to run attackUnit();
+		}
+
 	}
+	
 }
 
 void Achar_Unit::attackUnit()
@@ -220,9 +228,14 @@ void Achar_Unit::attackUnit()
 			{
 				UE_LOG(LogTemp, Warning, TEXT("We have an available targeted unit"));
 			}
-
+			//Set projectile Target
 			projRef->setTargetUnit(getTargetUnit());
+			//Set projectile Damage
 			projRef->storedDamage = baseAttack + bonusAttack;
+			//Copy Projectile OnHits
+			//projRef->OnHit = this->OnHit;
+			projRef->OwnedUnit = this;
+			//projRef->OnHit = this->OnHit;
 		}
 		else
 		{
@@ -240,9 +253,16 @@ FTimerHandle* Achar_Unit::getAttackTimerHandle()
 
 void Achar_Unit::receiveDamage(float val)
 {
+	
 	UE_LOG(LogTemp, Warning, TEXT("RECEIVING DAMAGE"));
 	currentHealth -= val;
 }
+
+//void Achar_Unit::AddOnHit(FOnHitDelegate OnHitName)
+//{
+//	OnHit.Add(OnHitName);
+//	
+//}
 
 void Achar_Unit::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const
 {

@@ -5,6 +5,7 @@
 #include "char_Unit.h"
 
 
+
 // Sets default values
 Apn_attackProjectile::Apn_attackProjectile()
 {
@@ -41,6 +42,8 @@ void Apn_attackProjectile::Tick(float DeltaTime)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Destroying Projectile")); //Otherwise display a warning that we can't find the target
 			getTargetUnit()->receiveDamage(storedDamage); //Need to update with the caller units attack damage
+			
+			
 			this->Destroy();
 		}
 	}

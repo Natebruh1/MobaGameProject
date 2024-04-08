@@ -42,6 +42,7 @@ void APC_ChampController::SpawnChampion()
 	
 	aiCont->Possess(controlledChampion);
 	
+	
 }
 
 
@@ -51,8 +52,99 @@ void APC_ChampController::Tick(float DeltaTime)
 	{
 		ClientBindCameraToChampion();
 	}
+	
+	if (controlledChampion && IsLocalController())
+	{
+		//Display for Game
+		if (displayPtr)
+		{
+			
+			Cast<UW_SidePanelInfo>(displayPtr)->healthPercentage = controlledChampion->currentHealth / controlledChampion->baseHealth;
+			
+			Cast<UW_SidePanelInfo>(displayPtr)->secondaryResourcePercentage = controlledChampion->secondaryPercentage;
+			Cast<UW_SidePanelInfo>(displayPtr)->secondaryName = controlledChampion->secondaryName;
+			Cast<UW_SidePanelInfo>(displayPtr)->QDesc = controlledChampion->Ability1Desc;
+			Cast<UW_SidePanelInfo>(displayPtr)->WDesc = controlledChampion->Ability2Desc;
+			Cast<UW_SidePanelInfo>(displayPtr)->EDesc = controlledChampion->Ability3Desc;
+			Cast<UW_SidePanelInfo>(displayPtr)->qCooldown = FText::FromString(FString::SanitizeFloat(cd1));
+			Cast<UW_SidePanelInfo>(displayPtr)->wCooldown = FText::FromString(FString::SanitizeFloat(cd2));
+			Cast<UW_SidePanelInfo>(displayPtr)->eCooldown = FText::FromString(FString::SanitizeFloat(cd3));
+		}
+		//Display for diagnostics
+		if (diagPtr)
+		{
+
+
+			Cast<UW_GameDiagnostics>(diagPtr)->ActorName = FText::FromString(controlledChampion->GetActorLabel());
+			Cast<UW_GameDiagnostics>(diagPtr)->playerID = playerID;
+			Cast<UW_GameDiagnostics>(diagPtr)->fps = 1.f / DeltaTime;
+
+			Cast<UW_GameDiagnostics>(diagPtr)->cachedMoveLocation = StoredDestination;
+			Cast<UW_GameDiagnostics>(diagPtr)->currentState = stateFromServer;
+			Cast<UW_GameDiagnostics>(diagPtr)->targetVector = getMouseVec();
+
+		}
+	}
+	if (controlledChampion && !IsLocalController() && displayPtr)
+	{
+		
+		
+		cd1 = controlledChampion->Ability1CD - GetWorld()->GetTimerManager().GetTimerElapsed(controlledChampion->Ability1Handle);
+		
+		cd2= controlledChampion->Ability2CD -GetWorld()->GetTimerManager().GetTimerElapsed(controlledChampion->Ability2Handle);
+		
+		cd3 = controlledChampion->Ability2CD -GetWorld()->GetTimerManager().GetTimerElapsed(controlledChampion->Ability3Handle);
+		
+	}
+	if (controlledChampion && !IsLocalController() && diagPtr)
+	{
+
+
+		stateFromServer= controlledChampion->GetController<AAC_PlayerAIController>()->getCurrentState();
+
+	}
+
+	
+
+	if (controlledChampion)
+	{
+		FVector tmp = getMouseVec();
+		if (tmp != controlledChampion->GetActorLocation())
+		{
+			ServerUpdateMouseVec(tmp);
+		}
+		
+	}
 }
 
+FVector APC_ChampController::getMouseVec()
+{
+	FHitResult Hit;
+	bool bHitSuccessful = false;
+	bool bTargetSuccessful = false;
+	//Were they targeting a character? If yes then move until in targets range
+
+	bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
+	if (bHitSuccessful)//If we click on a travellable surface
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("Found vec to Mouse : %s"), *(Hit.Location - controlledChampion-> GetActorLocation()).ToString());
+		return Hit.Location - controlledChampion->GetActorLocation();
+
+
+	}
+	//UE_LOG(LogTemp, Warning, TEXT("Mouse Vector not found"));
+	return controlledChampion->GetActorLocation();
+}
+
+void APC_ChampController::ServerUpdateMouseVec_Implementation(FVector inp)
+{
+	if (controlledChampion->GetController<AAC_PlayerAIController>() != nullptr)
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("player ai controller Updating Cached MouseVec"));
+		controlledChampion->GetController<AAC_PlayerAIController>()->cachedMouseVec=inp;
+	}
+}
+bool APC_ChampController::ServerUpdateMouseVec_Validate(FVector inp) { return true; };
 
 
 void APC_ChampController::ClientBindCameraToChampion_Implementation()
@@ -95,6 +187,7 @@ void APC_ChampController::SetupInputComponent()
 		//Setup the inputs for the keys
 		EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Started, this, &APC_ChampController::clientAbility1);
 		EnhancedInputComponent->BindAction(UseAbility2, ETriggerEvent::Started, this, &APC_ChampController::clientAbility2);
+		EnhancedInputComponent->BindAction(UseAbility3, ETriggerEvent::Started, this, &APC_ChampController::clientAbility3);
 		//EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Completed, this, &APC_ChampController::clientAbility1);
 		//EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Triggered, this, &APC_ChampController::clientAbility1);
 	}
@@ -115,6 +208,7 @@ void APC_ChampController::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("SPAWNING CHAMP!"));
 		SpawnChampion();
 		incrementPlayerCount();
+		playerID = GetWorld()->GetGameState<AMoba_GameState>()->getPlayerCount();
 	}
 	cameraAttached = false;
 	ClientBindCameraToChampion();
@@ -123,6 +217,41 @@ void APC_ChampController::BeginPlay()
 		joinOtherTeam();
 	}
 	
+	if (controlledChampion)
+	{
+		if (overlayClass) //Overlay UClass Ref
+		{
+			displayPtr = CreateWidget<UW_SidePanelInfo>(GetWorld(), overlayClass);
+			if (displayPtr)
+			{
+				//displayPtr->SetDesiredSizeInViewport(FVector2D(500.f, 500.f));
+
+
+				//cardPtr->SetRenderScale(FVector2D(0.1f, 0.1f));
+				displayPtr->SetPositionInViewport(FVector2D(40.f,190.f));
+				
+				
+				displayPtr->SetRenderScale(FVector2D(0.5f, 0.5f));
+				displayPtr->AddToViewport();
+			}
+		}
+	}
+	if (diagClass) //Diagnostic UClass ref
+	{
+		diagPtr = CreateWidget<UW_GameDiagnostics>(GetWorld(), diagClass);
+		if (diagPtr) //Successfully made widget
+		{
+			
+			if (GEngine->GameViewport) {
+				FVector2D winSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
+				winSize -= FVector2D(winSize.X * 0.15, winSize.Y * 0.75);
+				diagPtr->SetPositionInViewport(winSize / 2);
+			}
+			//diagPtr->SetRenderScale(FVector2D(5.f, 5.f));
+			
+			diagPtr->AddToViewport();
+		}
+	}
 }
 
 void APC_ChampController::OnInputStarted()
@@ -251,6 +380,12 @@ void APC_ChampController::clientAbility2()
 	Ability_2();
 	Ability_2_Animation();
 }
+void APC_ChampController::clientAbility3()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 3 from client"));
+	Ability_3();
+	Ability_3_Animation();
+}
 
 /// ---------///
 /// ABILITIES///
@@ -289,6 +424,21 @@ void APC_ChampController::Ability_2_Animation_Implementation()
 	controlledChampion->ability_2_Animation();
 }
 bool APC_ChampController::Ability_2_Animation_Validate() { return true; }
+
+
+void APC_ChampController::Ability_3_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 3"));
+
+	controlledChampion->ability_3();
+}
+bool APC_ChampController::Ability_3_Validate() { return true; }
+
+void APC_ChampController::Ability_3_Animation_Implementation()
+{
+	controlledChampion->ability_3_Animation();
+}
+bool APC_ChampController::Ability_3_Animation_Validate() { return true; }
 
 void APC_ChampController::incrementPlayerCount_Implementation()
 {
@@ -331,6 +481,12 @@ void APC_ChampController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APC_ChampController, controlledChampion);
+	DOREPLIFETIME(APC_ChampController, stateFromServer);
+	DOREPLIFETIME(APC_ChampController, playerID);
+
+	DOREPLIFETIME(APC_ChampController, cd1);
+	DOREPLIFETIME(APC_ChampController, cd2);
+	DOREPLIFETIME(APC_ChampController, cd3);
 	//DOREPLIFETIME_CONDITION(APC_ChampController, cameraAttached, COND_OwnerOnly);
 }
 

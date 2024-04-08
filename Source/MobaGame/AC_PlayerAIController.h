@@ -38,9 +38,12 @@ public:
 	void updateInternalState(EInternalActionState newState);
 	FVector getCachedMoveLocation();
 	void setCachedMoveLocation(FVector val);
+	UPROPERTY(EditAnywhere) FVector cachedMouseVec;
+	EInternalActionState getCurrentState();
 private:
 	UPROPERTY(EditAnywhere) TEnumAsByte<EInternalActionState> currentState = Idle;
 	UPROPERTY(EditAnywhere) FVector cachedMoveLocation;
+	
 	FVector targetVector;
 	
 };

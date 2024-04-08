@@ -31,10 +31,13 @@ public:
 	void ability_1() override;
 	void ability_1_Animation() override;
 	void ability_2() override;
+	void ability_3() override;
 	USphereComponent* FireBall;
 	
 	//virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 	UFUNCTION() void end_fire();
+	UFUNCTION() void end_bonusAttack();
+	//UFUNCTION() void AttackSteroidOnHit(Achar_Unit* waoPierre, Achar_Unit** target);
 	
 protected:
 	virtual void BeginPlay() override;
@@ -42,5 +45,6 @@ private:
 	float staggeredDamage = 0.f;
 	bool Ability1Active = false;
 	FTimerHandle FireHandle;
+	FTimerHandle AttackIncreaseHandle;
 	
 };

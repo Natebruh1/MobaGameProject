@@ -12,6 +12,7 @@
 
 class Achar_Unit;
 
+
 UCLASS()
 class MOBAGAME_API Apn_attackProjectile : public APawn
 {
@@ -34,7 +35,10 @@ public:
 	Achar_Unit* getTargetUnit();
 	UFUNCTION(Server, Reliable, WithValidation) void setTargetUnit(Achar_Unit* newTarget);
 	float storedDamage=300.f;
-
+	Achar_Unit* OwnedUnit;
+	TArray<UFunction*> OnHit;
+	
+	//OnHitDelegate newDel;
 private:
 	UPROPERTY(VisibleAnywhere) class UStaticMeshComponent* ProjectileMeshComponent;
 	UPROPERTY(VisibleAnywhere) class UFloatingPawnMovement* FloatingMovementComponent;
