@@ -20,7 +20,7 @@
 
 //Forward declaration allows us to spawn Decal or FX upon clicking
 class UNiagaraSystem;
-
+class UW_ChampSelect;
 /**
  * 
  */
@@ -67,7 +67,10 @@ public:
 	UPROPERTY(EditAnywhere,Replicated) float cd3;
 	
 	UFUNCTION() void SpawnChampion();
+	void CreatePlayer();
 	UFUNCTION(Client, Reliable, WithValidation) void ClientBindCameraToChampion();
+	UPROPERTY(EditAnywhere,Replicated)bool cameraAttached;
+
 	UFUNCTION(Server, Reliable, WithValidation) void ServerMoveChampion(FVector moveLocation);
 	UFUNCTION(Server, Reliable, WithValidation) void ServerUpdateTargetUnit(Achar_Unit* newTarget);
 	UFUNCTION(Server, Reliable, WithValidation) void Ability_1();
@@ -83,6 +86,13 @@ public:
 
 	UPROPERTY(EditAnywhere,Replicated) int playerID;
 	UPROPERTY(EditAnywhere, Replicated) TEnumAsByte<EInternalActionState> stateFromServer;
+
+	UPROPERTY(EditAnywhere, Replicated) FString netAction="";
+	UFUNCTION(Client, Reliable, WithValidation)void ClientUpdateNetAction(const FString &inStr);
+
+
+	UPROPERTY(EditAnywhere) TSubclassOf<UW_ChampSelect> champSelectClass;
+	UPROPERTY(EditAnywhere) UW_ChampSelect* champSelectPtr;
 protected:
 	//Move to the mouse cursor
 	uint32 bMoveToMouseCursor : 1;
@@ -105,10 +115,12 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation) void incrementPlayerCount();
 	UFUNCTION(Server, Reliable, WithValidation)void setChampionTeam(TeamName val);
 	UFUNCTION(CallInEditor, Server, Reliable, WithValidation) void joinOtherTeam();
+
+
 private:
 	FVector StoredDestination;
 	float FollowTime;
-	bool cameraAttached;
+	
 	FVector SpawnLocation;
 	FRotator SpawnRotation;
 	AAC_PlayerAIController* aiCont;

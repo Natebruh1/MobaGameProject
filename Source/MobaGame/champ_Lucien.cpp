@@ -25,7 +25,7 @@ void Achamp_Lucien::Tick(float DeltaTime)
 	{
 		FVector distVec = getTargetUnit()->GetActorLocation() - GetActorLocation();
 		float dist = distVec.Size()/10.f;
-		baseAttack = 300.0 + (100.f / max(dist, 1.0));
+		baseAttack = 300.0 + ((500.f+bonusAttack) / max(dist, 1.0));
 	}
 	
 

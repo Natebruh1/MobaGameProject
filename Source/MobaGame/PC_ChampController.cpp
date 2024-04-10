@@ -12,6 +12,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Moba_GameState.h"
 #include "DrawDebugHelpers.h"
+#include "./Public/W_ChampSelect.h"
 
 
 
@@ -45,6 +46,59 @@ void APC_ChampController::SpawnChampion()
 	
 }
 
+void APC_ChampController::CreatePlayer()
+{
+	if (HasAuthority())//We only want the player controller that is on the server to spawn a champion
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SPAWNING CHAMP!"));
+		SpawnChampion();
+		incrementPlayerCount();
+		playerID = GetWorld()->GetGameState<AMoba_GameState>()->getPlayerCount();
+	}
+	cameraAttached = false;
+	ClientBindCameraToChampion();
+
+	if (GetWorld()->GetGameState<AMoba_GameState>()->getPlayerCount() % 2 == 0) {
+		joinOtherTeam();
+	}
+
+	if (controlledChampion)
+	{
+		if (overlayClass) //Overlay UClass Ref
+		{
+			displayPtr = CreateWidget<UW_SidePanelInfo>(GetWorld(), overlayClass);
+			if (displayPtr)
+			{
+				//displayPtr->SetDesiredSizeInViewport(FVector2D(500.f, 500.f));
+
+
+				//cardPtr->SetRenderScale(FVector2D(0.1f, 0.1f));
+				displayPtr->SetPositionInViewport(FVector2D(40.f, 190.f));
+
+
+				displayPtr->SetRenderScale(FVector2D(0.5f, 0.5f));
+				displayPtr->AddToViewport();
+			}
+		}
+	}
+	if (diagClass) //Diagnostic UClass ref
+	{
+		diagPtr = CreateWidget<UW_GameDiagnostics>(GetWorld(), diagClass);
+		if (diagPtr) //Successfully made widget
+		{
+
+			if (GEngine->GameViewport) {
+				FVector2D winSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
+				winSize -= FVector2D(winSize.X * 0.15, winSize.Y * 0.75);
+				diagPtr->SetPositionInViewport(winSize / 2);
+			}
+			//diagPtr->SetRenderScale(FVector2D(5.f, 5.f));
+
+			diagPtr->AddToViewport();
+		}
+	}
+}
+
 
 void APC_ChampController::Tick(float DeltaTime)
 {
@@ -66,9 +120,10 @@ void APC_ChampController::Tick(float DeltaTime)
 			Cast<UW_SidePanelInfo>(displayPtr)->QDesc = controlledChampion->Ability1Desc;
 			Cast<UW_SidePanelInfo>(displayPtr)->WDesc = controlledChampion->Ability2Desc;
 			Cast<UW_SidePanelInfo>(displayPtr)->EDesc = controlledChampion->Ability3Desc;
-			Cast<UW_SidePanelInfo>(displayPtr)->qCooldown = FText::FromString(FString::SanitizeFloat(cd1));
-			Cast<UW_SidePanelInfo>(displayPtr)->wCooldown = FText::FromString(FString::SanitizeFloat(cd2));
-			Cast<UW_SidePanelInfo>(displayPtr)->eCooldown = FText::FromString(FString::SanitizeFloat(cd3));
+			Cast<UW_SidePanelInfo>(displayPtr)->qCooldown = FText::FromString(FString::SanitizeFloat(floor(cd1)));
+			Cast<UW_SidePanelInfo>(displayPtr)->wCooldown = FText::FromString(FString::SanitizeFloat(floor(cd2)));
+			Cast<UW_SidePanelInfo>(displayPtr)->eCooldown = FText::FromString(FString::SanitizeFloat(floor(cd3)));//Cooldown
+			
 		}
 		//Display for diagnostics
 		if (diagPtr)
@@ -82,7 +137,13 @@ void APC_ChampController::Tick(float DeltaTime)
 			Cast<UW_GameDiagnostics>(diagPtr)->cachedMoveLocation = StoredDestination;
 			Cast<UW_GameDiagnostics>(diagPtr)->currentState = stateFromServer;
 			Cast<UW_GameDiagnostics>(diagPtr)->targetVector = getMouseVec();
+			Cast<UW_GameDiagnostics>(diagPtr)->totalAttack = controlledChampion->baseAttack + controlledChampion->bonusAttack;//Attack
+			Cast<UW_GameDiagnostics>(diagPtr)->currentHealth = (controlledChampion->currentHealth);//Health
+			Cast<UW_GameDiagnostics>(diagPtr)->unitSize = (controlledChampion->getUnitSize());//Size
+			Cast<UW_GameDiagnostics>(diagPtr)->secondaryResourcePercentage = (controlledChampion->secondaryPercentage);//Secondary Resource (Mana, Rage, Stagger ETC)
+			Cast<UW_GameDiagnostics>(diagPtr)->targetedUnit = (controlledChampion->getTargetUnit());//Targeted unit
 
+			Cast<UW_GameDiagnostics>(diagPtr)->CurrentNetworkAction = FText::FromString(netAction);//net Action
 		}
 	}
 	if (controlledChampion && !IsLocalController() && displayPtr)
@@ -143,6 +204,7 @@ void APC_ChampController::ServerUpdateMouseVec_Implementation(FVector inp)
 		//UE_LOG(LogTemp, Warning, TEXT("player ai controller Updating Cached MouseVec"));
 		controlledChampion->GetController<AAC_PlayerAIController>()->cachedMouseVec=inp;
 	}
+	//ClientUpdateNetAction("APC_ChampController::ServerUpdateMouseVec_Implementation");
 }
 bool APC_ChampController::ServerUpdateMouseVec_Validate(FVector inp) { return true; };
 
@@ -155,17 +217,24 @@ void APC_ChampController::ClientBindCameraToChampion_Implementation()
 		//UE_LOG(LogTemp, Warning, TEXT("---Character reference found---"));
 		cameraAttached = true;
 		SetViewTargetWithBlend(controlledChampion, 0.f, EViewTargetBlendFunction::VTBlend_Linear);//We bind the camera
+		
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Character reference not found"));
 	}
 	
+	
 }
 bool APC_ChampController::ClientBindCameraToChampion_Validate() { return true; }
 
 
 
+void APC_ChampController::ClientUpdateNetAction_Implementation(const FString &inStr)
+{
+	netAction = inStr;
+}
+bool APC_ChampController::ClientUpdateNetAction_Validate(const FString &inStr) { return true; }
 void APC_ChampController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -202,56 +271,33 @@ void APC_ChampController::BeginPlay()
 	{
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	}
-	//Spawn the champion
-	if (HasAuthority())//We only want the player controller that is on the server to spawn a champion
+	//Add the champ select
+	if (champSelectClass) //Overlay UClass Ref
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SPAWNING CHAMP!"));
-		SpawnChampion();
-		incrementPlayerCount();
-		playerID = GetWorld()->GetGameState<AMoba_GameState>()->getPlayerCount();
-	}
-	cameraAttached = false;
-	ClientBindCameraToChampion();
-	
-	if (GetWorld()->GetGameState<AMoba_GameState>()->getPlayerCount() % 2 == 0) {
-		joinOtherTeam();
-	}
-	
-	if (controlledChampion)
-	{
-		if (overlayClass) //Overlay UClass Ref
+		champSelectPtr = CreateWidget<UW_ChampSelect>(GetWorld(), champSelectClass);
+		if (champSelectPtr)
 		{
-			displayPtr = CreateWidget<UW_SidePanelInfo>(GetWorld(), overlayClass);
-			if (displayPtr)
-			{
-				//displayPtr->SetDesiredSizeInViewport(FVector2D(500.f, 500.f));
+			//displayPtr->SetDesiredSizeInViewport(FVector2D(500.f, 500.f));
 
 
-				//cardPtr->SetRenderScale(FVector2D(0.1f, 0.1f));
-				displayPtr->SetPositionInViewport(FVector2D(40.f,190.f));
-				
-				
-				displayPtr->SetRenderScale(FVector2D(0.5f, 0.5f));
-				displayPtr->AddToViewport();
-			}
-		}
-	}
-	if (diagClass) //Diagnostic UClass ref
-	{
-		diagPtr = CreateWidget<UW_GameDiagnostics>(GetWorld(), diagClass);
-		if (diagPtr) //Successfully made widget
-		{
-			
 			if (GEngine->GameViewport) {
 				FVector2D winSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
-				winSize -= FVector2D(winSize.X * 0.15, winSize.Y * 0.75);
-				diagPtr->SetPositionInViewport(winSize / 2);
+				winSize -= FVector2D(winSize.X * 0.4, winSize.Y * 0.4);
+				champSelectPtr->SetPositionInViewport(winSize / 2);
 			}
-			//diagPtr->SetRenderScale(FVector2D(5.f, 5.f));
 			
-			diagPtr->AddToViewport();
+
+			
+			
+			champSelectPtr->controllerRef = this;
+
+			
+			champSelectPtr->AddToViewport();
 		}
 	}
+
+	//Spawn the champion
+	
 }
 
 void APC_ChampController::OnInputStarted()
@@ -360,6 +406,8 @@ void APC_ChampController::ServerUpdateTargetUnit_Implementation(Achar_Unit* newT
 		}
 		
 	}
+	
+	ClientUpdateNetAction("APC_ChampController::ServerUpdateTargetUnit_Implementation");
 }
 bool APC_ChampController::ServerUpdateTargetUnit_Validate(Achar_Unit* newTarget) { return true; }
 
@@ -399,6 +447,7 @@ void APC_ChampController::Ability_1_Implementation()
 	
 	
 	
+	ClientUpdateNetAction("APC_ChampController::Ability_1_Implementation");
 }
 
 bool APC_ChampController::Ability_1_Validate() { return true; }
@@ -416,6 +465,8 @@ void APC_ChampController::Ability_2_Implementation()
 	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 2"));
 
 	controlledChampion->ability_2();
+	
+	ClientUpdateNetAction("APC_ChampController::Ability_2_Implementation");
 }
 bool APC_ChampController::Ability_2_Validate() { return true; }
 
@@ -431,6 +482,8 @@ void APC_ChampController::Ability_3_Implementation()
 	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 3"));
 
 	controlledChampion->ability_3();
+	
+	ClientUpdateNetAction("APC_ChampController::Ability_3_Implementation");
 }
 bool APC_ChampController::Ability_3_Validate() { return true; }
 
@@ -445,6 +498,7 @@ void APC_ChampController::incrementPlayerCount_Implementation()
 	AMoba_GameState* gameState = GetWorld()->GetGameState<AMoba_GameState>();
 	gameState->setPlayerCount(gameState->getPlayerCount() + 1);
 	
+	ClientUpdateNetAction("APC_ChampController::incrementPlayerCount_Implementation");
 }
 bool APC_ChampController::incrementPlayerCount_Validate() { return true; }
 
@@ -461,6 +515,8 @@ void APC_ChampController::joinOtherTeam_Implementation()//WIPWIP
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("player ai controller not found"))
 	}
+	
+	ClientUpdateNetAction("APC_ChampController::joinOtherTeam_Implementation");
 }
 bool APC_ChampController::joinOtherTeam_Validate()
 {
@@ -470,6 +526,8 @@ bool APC_ChampController::joinOtherTeam_Validate()
 void APC_ChampController::setChampionTeam_Implementation(TeamName val)
 {
 	controlledChampion->setUnitTeam(val);
+	
+	ClientUpdateNetAction("APC_ChampController::setChampionTeam_Implementation");
 }
 
 bool APC_ChampController::setChampionTeam_Validate(TeamName val)
@@ -487,6 +545,9 @@ void APC_ChampController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME(APC_ChampController, cd1);
 	DOREPLIFETIME(APC_ChampController, cd2);
 	DOREPLIFETIME(APC_ChampController, cd3);
+
+	DOREPLIFETIME(APC_ChampController, cameraAttached);
+	DOREPLIFETIME(APC_ChampController, netAction);
 	//DOREPLIFETIME_CONDITION(APC_ChampController, cameraAttached, COND_OwnerOnly);
 }
 
@@ -509,5 +570,7 @@ void APC_ChampController::ServerMoveChampion_Implementation(FVector moveLocation
 			UE_LOG(LogTemp, Warning, TEXT("Controlled champion not Found either"));
 		}
 	}
+	
+	ClientUpdateNetAction("APC_ChampController::ServerMoveChampion_Implementation");
 }
 bool APC_ChampController::ServerMoveChampion_Validate(FVector moveLocation) { return true; }
