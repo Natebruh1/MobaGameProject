@@ -37,8 +37,9 @@ public:
 	float storedDamage=300.f;
 	Achar_Unit* OwnedUnit;
 	TArray<UFunction*> OnHit;
-	
+	FTimerHandle TimeoutHandle;
 	//OnHitDelegate newDel;
+	UFUNCTION() void kill();
 private:
 	UPROPERTY(VisibleAnywhere) class UStaticMeshComponent* ProjectileMeshComponent;
 	UPROPERTY(VisibleAnywhere) class UFloatingPawnMovement* FloatingMovementComponent;

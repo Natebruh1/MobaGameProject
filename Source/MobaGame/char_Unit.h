@@ -101,6 +101,7 @@ public:
 	//Health variables
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health Variables", Replicated) float baseHealth = 1500.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health Variables", Replicated) float currentHealth = baseHealth-300.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health Variables", Replicated) float healthRegen = 7.f;
 	UPROPERTY(EditAnywhere) float baseAttack = 180.f;
 	UPROPERTY(EditAnywhere) float bonusAttack = 0.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health Variables") TSubclassOf<UUserWidget> widgetClass;

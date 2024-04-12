@@ -38,11 +38,11 @@ public:
 	UFUNCTION() void end_fire();
 	UFUNCTION() void end_bonusAttack();
 	//UFUNCTION() void AttackSteroidOnHit(Achar_Unit* waoPierre, Achar_Unit** target);
-	
+	UPROPERTY(EditAnywhere,Replicated) float staggeredDamage = 0.f;
 protected:
 	virtual void BeginPlay() override;
 private:
-	float staggeredDamage = 0.f;
+	
 	bool Ability1Active = false;
 	FTimerHandle FireHandle;
 	FTimerHandle AttackIncreaseHandle;

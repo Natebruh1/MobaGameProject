@@ -45,15 +45,21 @@ public:
 	UPROPERTY(EditAnywhere) class UInputAction* SetTargetClickAction;
 
 	//KEYS
+	//	Abilities
 	UPROPERTY(EditAnywhere) class UInputAction* UseAbility1;
 	UPROPERTY(EditAnywhere) class UInputAction* UseAbility2;
 	UPROPERTY(EditAnywhere) class UInputAction* UseAbility3;
+	//	Switch Champion
+	UPROPERTY(EditAnywhere) class UInputAction* SwitchChampion;
 
 	//Spawn champion
 	
 	UPROPERTY(EditAnywhere, Category = "Champion Class") TSubclassOf<AAC_PlayerAIController> aiClass;
 
-	UPROPERTY(EditAnywhere, Category="Champion Class") TSubclassOf<Achar_BaseChampion> championClass;
+	UPROPERTY(EditAnywhere, Category="Champion Class") TSubclassOf<Achar_BaseChampion> championClass0;
+	UPROPERTY(EditAnywhere, Category = "Champion Class") TSubclassOf<Achar_BaseChampion> championClass1;
+
+
 	UPROPERTY(EditAnywhere, Replicated) Achar_BaseChampion* controlledChampion;
 
 	UPROPERTY(EditAnywhere) TSubclassOf<UW_SidePanelInfo> overlayClass;
@@ -67,10 +73,12 @@ public:
 	UPROPERTY(EditAnywhere,Replicated) float cd3;
 	
 	UFUNCTION() void SpawnChampion();
-	void CreatePlayer();
+	UFUNCTION() void CreatePlayer(bool firstTime=true);
+	UFUNCTION() void DeletePlayer();
 	UFUNCTION(Client, Reliable, WithValidation) void ClientBindCameraToChampion();
 	UPROPERTY(EditAnywhere,Replicated)bool cameraAttached;
 
+	//Input bound
 	UFUNCTION(Server, Reliable, WithValidation) void ServerMoveChampion(FVector moveLocation);
 	UFUNCTION(Server, Reliable, WithValidation) void ServerUpdateTargetUnit(Achar_Unit* newTarget);
 	UFUNCTION(Server, Reliable, WithValidation) void Ability_1();
@@ -79,6 +87,14 @@ public:
 	UFUNCTION(NetMulticast, Reliable, WithValidation) void Ability_2_Animation();
 	UFUNCTION(Server, Reliable, WithValidation) void Ability_3();
 	UFUNCTION(NetMulticast, Reliable, WithValidation) void Ability_3_Animation();
+	UFUNCTION(Server, Reliable, WithValidation)void switchChampion();
+	int currentChampion = 0;
+	const int totalChampions = 2;
+
+	FTimerHandle respawnTimer;
+	UFUNCTION(Server, Reliable, WithValidation)void respawnPlayer();
+
+
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION() FVector getMouseVec();

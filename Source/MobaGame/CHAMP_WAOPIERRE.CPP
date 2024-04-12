@@ -79,7 +79,7 @@ void Achamp_WaoPierre::Tick(float DeltaTime)
 	}
 
 	secondaryPercentage = (staggeredDamage) / baseHealth;
-
+	if (secondaryPercentage < 0.005) { staggeredDamage = 0.f; }
 }
 
 void Achamp_WaoPierre::end_fire()
@@ -175,3 +175,13 @@ void Achamp_WaoPierre::ability_3()
 
 
 
+void Achamp_WaoPierre::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+
+	//DOREPLIFETIME(Achar_BaseChampion, mouseVec);
+	DOREPLIFETIME(Achamp_WaoPierre, staggeredDamage);
+	
+	//DOREPLIFETIME_CONDITION(APC_ChampController, cameraAttached, COND_OwnerOnly);
+}

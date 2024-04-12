@@ -29,6 +29,7 @@ void Apn_attackProjectile::BeginPlay()
 	Super::BeginPlay();
 	SetReplicates(true);
 	SetReplicateMovement(true);
+	GetWorld()->GetTimerManager().SetTimer(TimeoutHandle, this, &Apn_attackProjectile::kill, 5.0, false);
 }
 
 // Called every frame
@@ -49,7 +50,7 @@ void Apn_attackProjectile::Tick(float DeltaTime)
 	}
 	else
 	{
-		Destroy();
+		this->Destroy();
 	}
 	
 
@@ -65,6 +66,11 @@ void Apn_attackProjectile::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 Achar_Unit* Apn_attackProjectile::getTargetUnit()
 {
 	return targetUnit;
+}
+
+void Apn_attackProjectile::kill()
+{
+	this->Destroy(); // Kill this
 }
 
 void Apn_attackProjectile::setTargetUnit_Implementation(Achar_Unit* newTarget)

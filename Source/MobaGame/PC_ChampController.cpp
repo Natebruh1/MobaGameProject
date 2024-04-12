@@ -35,10 +35,22 @@ void APC_ChampController::SpawnChampion()
 
 	
 	UE_LOG(LogTemp, Warning, TEXT("Spawning Character"));
+	bool b;
+	switch (currentChampion % totalChampions)
+	{
+	case 0:
+		b = (championClass0 == NULL);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Black, FString::Printf(TEXT("Template Class Null: %s"), b ? TEXT("true") : TEXT("false")));
+		controlledChampion = GetWorld()->SpawnActor<Achar_BaseChampion>(championClass0, SpawnLocation, SpawnRotation);
+		break;
+	case 1:
+		b = (championClass1 == NULL);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Black, FString::Printf(TEXT("Template Class Null: %s"), b ? TEXT("true") : TEXT("false")));
+		controlledChampion = GetWorld()->SpawnActor<Achar_BaseChampion>(championClass1, SpawnLocation, SpawnRotation);
+		break;
+	}
+
 	
-	bool b = (championClass == NULL);
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Black, FString::Printf(TEXT("Template Class Null: %s"), b ? TEXT("true") : TEXT("false")));
-	controlledChampion = GetWorld()->SpawnActor<Achar_BaseChampion>(championClass, SpawnLocation, SpawnRotation);
 	//controlledChampion->SetAutonomousProxy(true);
 	
 	aiCont->Possess(controlledChampion);
@@ -46,22 +58,26 @@ void APC_ChampController::SpawnChampion()
 	
 }
 
-void APC_ChampController::CreatePlayer()
+void APC_ChampController::CreatePlayer(bool firstTime)
 {
 	if (HasAuthority())//We only want the player controller that is on the server to spawn a champion
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SPAWNING CHAMP!"));
 		SpawnChampion();
-		incrementPlayerCount();
-		playerID = GetWorld()->GetGameState<AMoba_GameState>()->getPlayerCount();
+		if (firstTime) {// If we're spawning for the first time
+			incrementPlayerCount();
+			playerID = GetWorld()->GetGameState<AMoba_GameState>()->getPlayerCount();
+		}
+		
 	}
 	cameraAttached = false;
 	ClientBindCameraToChampion();
 
-	if (GetWorld()->GetGameState<AMoba_GameState>()->getPlayerCount() % 2 == 0) {
-		joinOtherTeam();
+	if (firstTime) {
+		if (GetWorld()->GetGameState<AMoba_GameState>()->getPlayerCount() % 2 == 0) {
+			joinOtherTeam();
+		}
 	}
-
 	if (controlledChampion)
 	{
 		if (overlayClass) //Overlay UClass Ref
@@ -99,7 +115,47 @@ void APC_ChampController::CreatePlayer()
 	}
 }
 
+void APC_ChampController::DeletePlayer()
+{
+	if (HasAuthority())//We only want the player controller that is on the server to delete a champion
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DELETING CHAMP!"));
+		//aiCont->UnPossess();
+		controlledChampion->Destroy();
+		
+		
+		
+	}
+	//controlledChampion = nullptr;
+	if (displayPtr)
+	{
+		displayPtr->RemoveFromViewport();
+	}
+	if (diagPtr)
+	{
+		diagPtr->RemoveFromViewport();
+	}
+	//
+}
 
+
+void APC_ChampController::switchChampion_Implementation()
+{
+	currentChampion += 1;
+	DeletePlayer(); //Respawn the character
+	CreatePlayer(false);
+}
+bool APC_ChampController::switchChampion_Validate() { return true; }
+void APC_ChampController::respawnPlayer_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Respawning Player"));
+	if (!controlledChampion)
+	{
+		CreatePlayer(false);
+	}
+	
+}
+bool APC_ChampController::respawnPlayer_Validate() { return true; }
 void APC_ChampController::Tick(float DeltaTime)
 {
 	if (!cameraAttached)
@@ -157,7 +213,7 @@ void APC_ChampController::Tick(float DeltaTime)
 		cd3 = controlledChampion->Ability2CD -GetWorld()->GetTimerManager().GetTimerElapsed(controlledChampion->Ability3Handle);
 		
 	}
-	if (controlledChampion && !IsLocalController() && diagPtr)
+	if (controlledChampion && !IsLocalController() && diagPtr && controlledChampion->GetController<AAC_PlayerAIController>())
 	{
 
 
@@ -167,13 +223,24 @@ void APC_ChampController::Tick(float DeltaTime)
 
 	
 
-	if (controlledChampion)
+	if (controlledChampion)//Update the vector to mouse
 	{
 		FVector tmp = getMouseVec();
 		if (tmp != controlledChampion->GetActorLocation())
 		{
 			ServerUpdateMouseVec(tmp);
 		}
+		
+	}
+
+
+	if (!controlledChampion && GetWorld()->GetTimerManager().GetTimerElapsed(respawnTimer) == 0.f) //Dead, start the respawn timer
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Player Presumed dead, starting respawn timer"));
+		
+		
+		GetWorld()->GetTimerManager().SetTimer(respawnTimer, this, &APC_ChampController::respawnPlayer, 10.f, false);
+		
 		
 	}
 }
@@ -257,6 +324,9 @@ void APC_ChampController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Started, this, &APC_ChampController::clientAbility1);
 		EnhancedInputComponent->BindAction(UseAbility2, ETriggerEvent::Started, this, &APC_ChampController::clientAbility2);
 		EnhancedInputComponent->BindAction(UseAbility3, ETriggerEvent::Started, this, &APC_ChampController::clientAbility3);
+
+		//Champion Switch
+		EnhancedInputComponent->BindAction(SwitchChampion, ETriggerEvent::Started, this, &APC_ChampController::switchChampion);
 		//EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Completed, this, &APC_ChampController::clientAbility1);
 		//EnhancedInputComponent->BindAction(UseAbility1, ETriggerEvent::Triggered, this, &APC_ChampController::clientAbility1);
 	}
@@ -271,32 +341,10 @@ void APC_ChampController::BeginPlay()
 	{
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	}
-	//Add the champ select
-	if (champSelectClass) //Overlay UClass Ref
-	{
-		champSelectPtr = CreateWidget<UW_ChampSelect>(GetWorld(), champSelectClass);
-		if (champSelectPtr)
-		{
-			//displayPtr->SetDesiredSizeInViewport(FVector2D(500.f, 500.f));
-
-
-			if (GEngine->GameViewport) {
-				FVector2D winSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
-				winSize -= FVector2D(winSize.X * 0.4, winSize.Y * 0.4);
-				champSelectPtr->SetPositionInViewport(winSize / 2);
-			}
-			
-
-			
-			
-			champSelectPtr->controllerRef = this;
-
-			
-			champSelectPtr->AddToViewport();
-		}
-	}
+	
 
 	//Spawn the champion
+	CreatePlayer();
 	
 }
 
@@ -505,7 +553,7 @@ bool APC_ChampController::incrementPlayerCount_Validate() { return true; }
 void APC_ChampController::joinOtherTeam_Implementation()//WIPWIP
 {
 
-	if (controlledChampion->GetController<AAC_PlayerAIController>() != nullptr)
+	if (controlledChampion && controlledChampion->GetController<AAC_PlayerAIController>() != nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("player ai controller found, swapping team"))
 		controlledChampion->GetController<AAC_PlayerAIController>()->swapTeams();

@@ -57,7 +57,11 @@ void Achar_Unit::BeginPlay()
 void Achar_Unit::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
+	if (currentHealth <= 0.f)
+	{
+		Destroy();
+	}
+	currentHealth += healthRegen * DeltaTime;
 }
 
 // Called to bind functionality to input
@@ -271,6 +275,7 @@ void Achar_Unit::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME(Achar_Unit, unitTeam);
 	DOREPLIFETIME(Achar_Unit, currentHealth);
 	DOREPLIFETIME(Achar_Unit, baseHealth);
+	DOREPLIFETIME(Achar_Unit, healthRegen);
 	
 	//DOREPLIFETIME_CONDITION(APC_ChampController, cameraAttached, COND_OwnerOnly);
 }
