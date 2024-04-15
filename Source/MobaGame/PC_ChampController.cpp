@@ -356,6 +356,10 @@ void APC_ChampController::OnInputStarted()
 	
 }
 
+/// ------- ///
+/// CONTROL ///
+/// ------- ///
+
 void APC_ChampController::OnSetDestinationTriggered()
 {
 	//Flag that we've pressed the input
@@ -449,7 +453,7 @@ void APC_ChampController::ServerUpdateTargetUnit_Implementation(Achar_Unit* newT
 		if (newTarget != nullptr) {
 			if (controlledChampion->getUnitTeam() != newTarget->getUnitTeam()) //If new target is on the other team
 			{
-				controlledChampion->GetController<AAC_PlayerAIController>()->updateInternalState(AttackMove);
+				controlledChampion->GetController<AAC_PlayerAIController>()->updateInternalState(AttackMove); //Start AttackMoving towards them
 			}
 		}
 		
@@ -488,6 +492,7 @@ void APC_ChampController::clientAbility3()
 /// ---------///
 void APC_ChampController::Ability_1_Implementation()
 {
+	//Cast Ability1
 	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 1"));
 	
 	controlledChampion->ability_1();
@@ -510,6 +515,7 @@ bool APC_ChampController::Ability_1_Animation_Validate() { return true; }
 
 void APC_ChampController::Ability_2_Implementation()
 {
+	//Cast Ability2
 	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 2"));
 
 	controlledChampion->ability_2();
@@ -527,6 +533,7 @@ bool APC_ChampController::Ability_2_Animation_Validate() { return true; }
 
 void APC_ChampController::Ability_3_Implementation()
 {
+	//Cast Ability3
 	UE_LOG(LogTemp, Warning, TEXT("Player Controller calling Ability 3"));
 
 	controlledChampion->ability_3();
@@ -541,8 +548,13 @@ void APC_ChampController::Ability_3_Animation_Implementation()
 }
 bool APC_ChampController::Ability_3_Animation_Validate() { return true; }
 
+/// --------- ///
+/// GAMESTATE ///
+/// --------- ///
+
 void APC_ChampController::incrementPlayerCount_Implementation()
 {
+	//Increment totalPlayers in the game
 	AMoba_GameState* gameState = GetWorld()->GetGameState<AMoba_GameState>();
 	gameState->setPlayerCount(gameState->getPlayerCount() + 1);
 	
@@ -550,9 +562,9 @@ void APC_ChampController::incrementPlayerCount_Implementation()
 }
 bool APC_ChampController::incrementPlayerCount_Validate() { return true; }
 
-void APC_ChampController::joinOtherTeam_Implementation()//WIPWIP
+void APC_ChampController::joinOtherTeam_Implementation()
 {
-
+	//Swap the team on the server of controlledChampion
 	if (controlledChampion && controlledChampion->GetController<AAC_PlayerAIController>() != nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("player ai controller found, swapping team"))
@@ -573,6 +585,7 @@ bool APC_ChampController::joinOtherTeam_Validate()
 
 void APC_ChampController::setChampionTeam_Implementation(TeamName val)
 {
+	//Set the champion team on the server
 	controlledChampion->setUnitTeam(val);
 	
 	ClientUpdateNetAction("APC_ChampController::setChampionTeam_Implementation");
@@ -585,6 +598,7 @@ bool APC_ChampController::setChampionTeam_Validate(TeamName val)
 
 void APC_ChampController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const
 {
+	//Replicated Properties for playerController (and some for champion)
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APC_ChampController, controlledChampion);
 	DOREPLIFETIME(APC_ChampController, stateFromServer);
@@ -608,17 +622,17 @@ void APC_ChampController::ServerMoveChampion_Implementation(FVector moveLocation
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AI Controller Found"));
 		UE_LOG(LogTemp, Warning, TEXT("Moving to : %s"), *moveLocation.ToString());
-		controlledChampion->GetController<AAC_PlayerAIController>()->setCachedMoveLocation(moveLocation);
-		controlledChampion->GetController<AAC_PlayerAIController>()->updateInternalState(MoveState);
+		controlledChampion->GetController<AAC_PlayerAIController>()->setCachedMoveLocation(moveLocation); //Update the AIControllers cachecLocation
+		controlledChampion->GetController<AAC_PlayerAIController>()->updateInternalState(MoveState); //Change the AIControllers state to the MoveState
 	}
 	else {
-		UE_LOG(LogTemp, Warning, TEXT("AI Controller not Found"));
+		UE_LOG(LogTemp, Warning, TEXT("AI Controller not Found")); //Can't find AIController
 		if (controlledChampion == nullptr)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Controlled champion not Found either"));
 		}
 	}
 	
-	ClientUpdateNetAction("APC_ChampController::ServerMoveChampion_Implementation");
+	ClientUpdateNetAction("APC_ChampController::ServerMoveChampion_Implementation"); //Send back to client update
 }
 bool APC_ChampController::ServerMoveChampion_Validate(FVector moveLocation) { return true; }

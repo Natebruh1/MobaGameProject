@@ -20,6 +20,7 @@ public:
 	
 	void ability_2() override;
 	void ability_3() override;
-protected:
+
+	UPROPERTY(EditAnywhere) USphereComponent* Slash;
 	virtual void BeginPlay() override;
 };

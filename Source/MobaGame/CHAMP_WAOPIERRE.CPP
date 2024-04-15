@@ -7,13 +7,13 @@ Achamp_WaoPierre::Achamp_WaoPierre()
 	//Set base stats
 	Ability1CD = 8.f;
 	Ability3CD = 12.f;
-	setUnitAttackRange(1024.f);
-	baseAttack = 300.f;
+	setUnitAttackRange(150.f); //Melee
+	baseAttack = 140.f;
 
 	bReplicates = true;
 	//Fire = CreateDefaultSubobject<UNiagaraComponent>("Fire Particles");
 	//Fire->Deactivate();
-	FireBall = CreateDefaultSubobject<USphereComponent>(TEXT("Fireball Sphere"));
+	FireBall = CreateDefaultSubobject<USphereComponent>(TEXT("Fireball Sphere")); //For overlapping
 	FireBall->SetupAttachment(GetRootComponent());
 	FireBall->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Overlap);
 	FireBall->SetSphereRadius(16.f * baseSize);
@@ -24,13 +24,15 @@ Achamp_WaoPierre::Achamp_WaoPierre()
 	
 
 
-	FireSitIn = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Temp Mesh For Fire"));
+	FireSitIn = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Temp Mesh For Fire")); //For displaying
 	FireSitIn->SetupAttachment(RootComponent);
 	FireSitIn->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	//FireSitIn->SetHiddenInGame(true);
+
+	//For UI
 	secondaryName = FText::FromString("Stagger");
 	Ability1Desc = FText::FromString("Breath fire in front of Wao Pierre");
-	Ability2Desc = FText::FromString("Gain bonus attack temporarily. Gain 200 Staggered damage.");
+	Ability2Desc = FText::FromString("Gain bonus attack temporarily. Gain 200 Stagger.");
 	Ability3Desc = FText::FromString("Cut your staggered damage in half.");
 }
 
@@ -40,8 +42,8 @@ void Achamp_WaoPierre::Tick(float DeltaTime)
 
 
 	//STAGGER PASSIVE
-	//3 Refers to howl long the damage is staggered for
-	float staggerTick = staggeredDamage * (DeltaTime / 3);
+	//3 Refers to howl long the damage is staggered for - 3 + 1% bAD. (So at 300 bonus AD, damage is dealt over 6 seconds).
+	float staggerTick = staggeredDamage * (DeltaTime / (3+(bonusAttack*0.1f)));
 	currentHealth -= staggerTick;
 	staggeredDamage -= min(staggerTick, staggeredDamage);
 
@@ -49,37 +51,37 @@ void Achamp_WaoPierre::Tick(float DeltaTime)
 	if (Ability1Active)
 	{
 		
-		//UE_LOG(LogTemp, Warning, TEXT("Wao Pierre Shooting Fireball"));
-		TArray<AActor*> result;
-		UE_LOG(LogTemp, Warning, TEXT("MVec : %s"), *mouseVec.ToString());
-		FVector ForwardVec = mouseVec;
-		ForwardVec.Normalize();
-		FireBall->SetWorldLocation(this->GetActorLocation()+(ForwardVec*120.f));
-		FireSitIn->SetWorldLocation(this->GetActorLocation() + (ForwardVec * 120.f));
 		
-		FRotator a = mouseVec.Rotation();
-		a.Pitch = 0.f;
+		TArray<AActor*> result; //What we store overlapping actors in
+		
+		FVector ForwardVec = mouseVec; //Get the vector to point the fireball in
+		ForwardVec.Normalize(); //and then normalize it
+		FireBall->SetWorldLocation(this->GetActorLocation()+(ForwardVec*120.f)); //Set location to be slightly forwards
+		FireSitIn->SetWorldLocation(this->GetActorLocation() + (ForwardVec * 120.f)); //Same with the displayed mesh
+		
+		FRotator a = mouseVec.Rotation(); //Get the rotation
+		a.Pitch = 0.f; //Ignore pitch to lock it to the correct axis
 		FireBall->SetWorldRotation(a);
-		FireSitIn->SetWorldRotation(a);
+		FireSitIn->SetWorldRotation(a);//Update the rotation for the mesh and the sphere component
 		this->SetActorRotation(a);
-		FireSitIn->SetVisibility(true);
+		FireSitIn->SetVisibility(true); //Make the mesh visible
 		
-		FireBall->GetOverlappingActors(result, Achar_Unit::StaticClass());
+		FireBall->GetOverlappingActors(result, Achar_Unit::StaticClass()); //Get the actors
 		UE_LOG(LogTemp, Warning, TEXT("Fireball Overlap : %d"), result.Num());
 		for (int i = 0; i < result.Num(); i++)
 		{
-			if (result[i] != this && Cast<Achar_Unit>(result[i])->getUnitTeam()!=this->getUnitTeam())
+			if (result[i] != this && Cast<Achar_Unit>(result[i])->getUnitTeam()!=this->getUnitTeam()) //Cast the overlapping actor and check its on the opposite team
 			{
-				Achar_Unit* hitTarg = Cast<Achar_Unit>(result[i]);
+				Achar_Unit* hitTarg = Cast<Achar_Unit>(result[i]); //If it is then deal damage to that target
 				//Damage is 240 + 80% bAD over 1.2 seconds
-				hitTarg->receiveDamage((240.f+(bonusAttack*0.8)) * GetWorld()->DeltaTimeSeconds);
+				hitTarg->receiveDamage((240.f+(bonusAttack*0.8)) * GetWorld()->DeltaTimeSeconds); // 240 +80% bAD over the duration
 				
 			}
 		}
 	}
 
-	secondaryPercentage = (staggeredDamage) / baseHealth;
-	if (secondaryPercentage < 0.005) { staggeredDamage = 0.f; }
+	secondaryPercentage = (staggeredDamage) / baseHealth; //Update the secondary percentage for UI feedback.
+	if (secondaryPercentage < 0.005) { staggeredDamage = 0.f; } //Clamp the stagger value if it's low enough
 }
 
 void Achamp_WaoPierre::end_fire()
@@ -92,7 +94,7 @@ void Achamp_WaoPierre::end_fire()
 
 void Achamp_WaoPierre::end_bonusAttack()
 {
-	bonusAttack -= 50;
+	bonusAttack -= 50; //Reduce the bonusAttack gained
 }
 
 //void Achamp_WaoPierre::AttackSteroidOnHit(Achar_Unit* waoPierre, Achar_Unit** target)
@@ -107,18 +109,19 @@ void Achamp_WaoPierre::BeginPlay()
 	//Fire->SetVisibility(false);
 	Fire = UNiagaraFunctionLibrary::SpawnSystemAttached(FireComponent,
 		GetRootComponent(), "", GetActorLocation(), GetActorRotation(), EAttachLocation::KeepRelativeOffset, true, true,
-		ENCPoolMethod::AutoRelease, true);
-	//Fire = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FireComponent, FireBall->GetComponentLocation());
-	FireSitIn->SetWorldScale3D(FVector(0.f, 0.f, 0.f));
+		ENCPoolMethod::AutoRelease, true); //Particles don't work across multiplayer, a helper class would have to be made to do this (for ease and compat with all champions/units)
+	
+	FireSitIn->SetWorldScale3D(FVector(0.f, 0.f, 0.f)); //Mesh
 }
 
 void Achamp_WaoPierre::receiveDamage(float val)
 {
 	//Overridden for passive effect
-	float staggerPercent = 0.8;
-	currentHealth -= val * staggerPercent;
-	staggeredDamage += val * (1 - staggerPercent);
-	//ability_1();
+	float staggerPercent = 0.8-(bonusHealth*0.0005); //0.8 - 0.05 per 100 bonusHealth
+	staggerPercent = max(0.f, staggerPercent);
+	currentHealth -= val * staggerPercent; //Directly dealt damage
+	staggeredDamage += val * (1 - staggerPercent); //Damage over time
+	
 }
 
 void Achamp_WaoPierre::ability_1()

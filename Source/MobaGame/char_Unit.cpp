@@ -48,9 +48,9 @@ void Achar_Unit::BeginPlay()
 	Super::BeginPlay();
 	SetReplicates(true);
 	SetReplicateMovement(true);
-	joinTeam(Blue);
+	//joinTeam(Blue);
 	//Update our internal team
-	setUnitTeam(Blue);
+	//setUnitTeam(Blue);
 }
 
 // Called every frame
@@ -62,6 +62,8 @@ void Achar_Unit::Tick(float DeltaTime)
 		Destroy();
 	}
 	currentHealth += healthRegen * DeltaTime;
+	currentHealth = min(currentHealth, baseHealth);
+	baseHealth = startHealth + bonusHealth;
 }
 
 // Called to bind functionality to input
@@ -257,7 +259,7 @@ FTimerHandle* Achar_Unit::getAttackTimerHandle()
 
 void Achar_Unit::receiveDamage(float val)
 {
-	
+	//Reduce current health by the amount of damage received
 	UE_LOG(LogTemp, Warning, TEXT("RECEIVING DAMAGE"));
 	currentHealth -= val;
 }
@@ -270,11 +272,14 @@ void Achar_Unit::receiveDamage(float val)
 
 void Achar_Unit::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const
 {
+	//Replicate the properties below
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(Achar_Unit, targetedUnit);
 	DOREPLIFETIME(Achar_Unit, unitTeam);
 	DOREPLIFETIME(Achar_Unit, currentHealth);
 	DOREPLIFETIME(Achar_Unit, baseHealth);
+	DOREPLIFETIME(Achar_Unit, bonusHealth);
+	DOREPLIFETIME(Achar_Unit, startHealth);
 	DOREPLIFETIME(Achar_Unit, healthRegen);
 	
 	//DOREPLIFETIME_CONDITION(APC_ChampController, cameraAttached, COND_OwnerOnly);
