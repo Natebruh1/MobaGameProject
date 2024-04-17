@@ -90,7 +90,7 @@ public:
 	float getUnitRange();
 
 	void windupAttack();
-	void attackUnit();
+	virtual void attackUnit();
 	FTimerHandle* getAttackTimerHandle();
 	virtual void receiveDamage(float val);
 

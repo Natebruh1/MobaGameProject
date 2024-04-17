@@ -91,8 +91,8 @@ void Achar_BaseChampion::ability_3_Animation()
 
 
 
-template<typename ...T>
-ChampionScripts<T...>* Achar_BaseChampion::get_scripts()
+template<typename c,typename ...T>
+ChampionScripts<c,T...>* Achar_BaseChampion::get_scripts()
 {
 	return &(static_cast<ChampionScripts<T...>>(scripts));
 }

@@ -22,10 +22,10 @@
 
 
 
-template <typename... T>
-using ScriptFunction = void (*)(T... args);
-template <typename... T>
-using ChampionScripts = std::map<std::string, ScriptFunction<T...>>;
+template <typename c, typename... T>
+using ScriptFunction = void (c::*)(T... args);
+template <typename c,typename... T>
+using ChampionScripts = std::map<std::string, ScriptFunction<c,T...>>;
 
 
 /**
@@ -49,8 +49,8 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	//ForceInline means each time the function is called the function body is inserted, this is an unreal macro but there are vs macros for it too.
 	
-	template <typename... T>
-	ChampionScripts<T...>* get_scripts();
+	template <typename c,typename... T>
+	ChampionScripts<c,T...>* get_scripts();
 
 	UPROPERTY(EditAnywhere)FVector mouseVec;
 	
@@ -81,6 +81,9 @@ public:
 	UPROPERTY(EditAnywhere,Replicated)float mana = 0.f;
 	float maxMana = 1000.f;
 	float manaRegen = 10.f;
+
+	void* scripts; //Encompasser that is only accessible via casting
+
 private:
 	//Actually create the topdown Camera using a camera component
 	UPROPERTY(VisibleAnywhere) class UCameraComponent* TopDownCameraComponent;
@@ -88,7 +91,6 @@ private:
 	//And do the same for the Camera Boom so that it sits above the player
 	UPROPERTY(VisibleAnywhere) class USpringArmComponent* CameraBoom;
 
-	void* scripts; //Encompasser that is only accessible via casting
 	
 };
 

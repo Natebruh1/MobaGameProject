@@ -58,6 +58,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category="Champion Class") TSubclassOf<Achar_BaseChampion> championClass0;
 	UPROPERTY(EditAnywhere, Category = "Champion Class") TSubclassOf<Achar_BaseChampion> championClass1;
+	UPROPERTY(EditAnywhere, Category = "Champion Class") TSubclassOf<Achar_BaseChampion> championClass2;
 
 
 	UPROPERTY(EditAnywhere, Replicated) Achar_BaseChampion* controlledChampion;
@@ -89,7 +90,7 @@ public:
 	UFUNCTION(NetMulticast, Reliable, WithValidation) void Ability_3_Animation();
 	UFUNCTION(Server, Reliable, WithValidation)void switchChampion();
 	int currentChampion = 0;
-	const int totalChampions = 2;
+	const int totalChampions = 3;
 
 	FTimerHandle respawnTimer;
 	UFUNCTION(Server, Reliable, WithValidation)void respawnPlayer();

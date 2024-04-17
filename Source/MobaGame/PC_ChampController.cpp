@@ -48,6 +48,11 @@ void APC_ChampController::SpawnChampion()
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Black, FString::Printf(TEXT("Template Class Null: %s"), b ? TEXT("true") : TEXT("false")));
 		controlledChampion = GetWorld()->SpawnActor<Achar_BaseChampion>(championClass1, SpawnLocation, SpawnRotation);
 		break;
+	case 2:
+		b = (championClass1 == NULL);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Black, FString::Printf(TEXT("Template Class Null: %s"), b ? TEXT("true") : TEXT("false")));
+		controlledChampion = GetWorld()->SpawnActor<Achar_BaseChampion>(championClass2, SpawnLocation, SpawnRotation);
+		break;
 	}
 
 	
