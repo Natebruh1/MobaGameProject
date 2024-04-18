@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
-
+#include "./Public/pn_baseAimedProjectile.h"
 #include "CoreMinimal.h"
 #include "char_BaseChampion.h"
 #include "champ_Helena.generated.h"
@@ -28,6 +28,9 @@ public:
 	UPROPERTY(EditAnywhere) USphereComponent* Slash;
 	virtual void BeginPlay() override;
 	void ScriptDashDirection(AAC_PlayerAIController* args);
+
+	UPROPERTY(EditAnywhere)TSubclassOf<Apn_baseAimedProjectile> AbilityProjectile;
+	UPROPERTY(EditAnywhere) USphereComponent* HealAura;
 private: 
 	bool Ability3Active = false;
 	FVector lockedInFloatPos = FVector::Zero();

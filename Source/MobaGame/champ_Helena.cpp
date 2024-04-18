@@ -24,6 +24,12 @@ Achamp_Helena::Achamp_Helena()
 
 	ChampionScripts<Achamp_Helena, AAC_PlayerAIController*> tmpScripts;
 	
+
+
+	HealAura = CreateDefaultSubobject<USphereComponent>(TEXT("Heal Sphere")); //For overlapping
+	HealAura->SetupAttachment(GetRootComponent());
+	HealAura->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Overlap);
+	HealAura->SetSphereRadius(160.f * baseSize);
 	//tmpScripts.insert({ std::string("Dash"),&Achamp_Helena::ScriptDashDirection });
 	//scripts = &tmpScripts;
 }
@@ -73,10 +79,35 @@ void Achamp_Helena::Tick(float DeltaTime)
 
 void Achamp_Helena::ability_1()
 {
+	if (!GetWorldTimerManager().IsTimerActive(Ability1Handle)) //Not on cooldown
+	{
+		Apn_baseAimedProjectile* newProj = GetWorld()->SpawnActor<Apn_baseAimedProjectile>(AbilityProjectile, GetActorLocation(), mouseVec.Rotation());
+		newProj->team = getUnitTeam();
+		newProj->baseDir = mouseVec * FVector(1.f, 1.f, 0.f);
+		GetWorldTimerManager().SetTimer(Ability1Handle, Ability1CD, false); //Start the cooldown
+	}
 }
 
 void Achamp_Helena::ability_2()
 {
+	if (!GetWorldTimerManager().IsTimerActive(Ability2Handle)) //Not on cooldown
+	{
+		TArray<AActor*> SlashOverlap;
+		HealAura->GetOverlappingActors(SlashOverlap, Achar_Unit::StaticClass()); //Get the actors
+		UE_LOG(LogTemp, Warning, TEXT("Slash Overlap : %d"), SlashOverlap.Num());
+		for (int i = 0; i < SlashOverlap.Num(); i++)
+		{
+			if (SlashOverlap[i] != this && Cast<Achar_Unit>(SlashOverlap[i])->getUnitTeam() == this->getUnitTeam()) //Cast the overlapping actor and check its on the opposite team
+			{
+				Achar_Unit* hitTarg = Cast<Achar_Unit>(SlashOverlap[i]); //If it is then heal the target
+				
+				hitTarg->receiveDamage(-120.f); 
+
+			}
+		}
+
+		GetWorldTimerManager().SetTimer(Ability2Handle, Ability2CD, false); //Start the cooldown
+	}
 }
 
 void Achamp_Helena::ability_3()
